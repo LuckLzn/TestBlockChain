@@ -18,16 +18,20 @@ class Block:
     
     def mine(self, Data, PrHash, Diff):
         nounce = 0
-        unminedblock = (str(Data) + str(PrHash) + str(nounce)).encode()
         umbhash = hashlib.sha256()
-        while(1):
+
+        while True:
+            unminedblock = (str(Data) + str(PrHash) + str(nounce)).encode('utf-8')
             umbhash.update(unminedblock)
-            hash = umbhash.hexdigest()
-            if int(hash, 16) < 2**(256 - Diff):
+            hash_result = umbhash.hexdigest()
+            if int(hash_result, 16) < 2**(256 - Diff):
                 break
+            umbhash = hashlib.sha256()  # Create a new hash object for the next iteration
             unminedblock = (str(Data) + str(PrHash) + str(nounce)).encode()
             nounce += 1
-        self.BlockMined(hash, PrHash, nounce)
+
+        
+        self.BlockMined(hash_result, PrHash, nounce)
     
     @staticmethod
     def updateLatestblock(prhash, block):
@@ -44,8 +48,6 @@ class Block:
         # Writing to sample.json
         with open("LatestBlock.json", "w") as outfile:
             outfile.write(json_object)
-
-        print('ok')
    
     @staticmethod
     def getlatestBlock():

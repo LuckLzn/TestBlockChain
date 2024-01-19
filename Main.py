@@ -15,7 +15,7 @@ Data ={
 }
 if not os.path.exists('BlockChain.json'):
     Chain.CreateChain()
-
+    
 Try = Chain.WriteOnChain(Data, Diff)
 if Try:
     print('Mining Seccesful')

@@ -1,6 +1,7 @@
 from Block import Block
 import json
 import hashlib
+
 class Chain:
     @staticmethod
     def CreateChain():
@@ -59,18 +60,19 @@ class Chain:
                 return True
             else:
                 return False
+            
     @staticmethod
     def ProofofWork(Data, prvH, Diff, block):
-        i, bldata, Hash, Nounce = Block.getData(block)
-        nounce = 0
-        unminedblock = (str(Data) + str(prvH) + str(nounce)).encode()
+        #Retrive the nounce
+        Nounce = str(block.getData()[3]) 
+
+        unminedblock = (str(Data) + str(prvH) + str(Nounce)).encode('utf-8')
+
         umbhash = hashlib.sha256()
-        while(1):
-            umbhash.update(unminedblock)
-            hash = umbhash.hexdigest()
-            if int(hash, 16) < 2**(256 - Diff):
-                break
-            unminedblock = (str(Data) + str(prvH) + str(nounce)).encode()
-            nounce += 1
-        if hash == Hash:
+        umbhash.update(unminedblock)
+
+        hash_result = umbhash.hexdigest()
+        if int(hash_result, 16) < 2**(256 - Diff):
             return True
+        else:
+            return False
