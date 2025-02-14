@@ -1,78 +1,60 @@
-from Block import Block
 import json
 import hashlib
+from Block import Block
 
 class Chain:
     @staticmethod
-    def CreateChain():
-        chain = []
-        Diff = 10
-        f = open('BlockChain.json', 'w')
-        obj = []
-        json.dump(obj, f, indent = 4)
-        f.close()
-        with open('BlockChain.json') as Bc:
-            chain = json.load(Bc)
-            prevbl = 'genesis'
-            genesis = Block('0', prevbl)
-            genesis.mine(prevbl, '0', Diff)
-            block = {
-                'Block0' :{
-                    'Block Index' : '0',
-                    'Block Data': prevbl,
-                    'Block Hash': genesis.Hash,
-                    'Block Nounce': genesis.Nounce,
-                    'Previous Hash': genesis.Previous_Hash,
-                },
-            }
-            chain.append(block)
-            Bc.close()
-        with open ('BlockChain.json', 'w') as bc:
-            json.dump(chain, bc, indent = 4, separators=(',', ': '))
-            bc.close()
-        Block.updateLatestblock('0', genesis)
-    
+    def create_chain():
+        genesis_block_data = {
+            'Block index': 0,
+            'Block data': 'genesis',
+            'Block hash': None,
+            'Block nonce': None,
+            'Previous hash': '0'
+        }
+
+        genesis_block = Block(0, genesis_block_data['Block data'])
+        genesis_block.mine(genesis_block_data['Block data'], '0', 10)
+
+        genesis_block_data['Block hash'] = genesis_block.hash
+        genesis_block_data['Block nonce'] = genesis_block.nonce
+
+        with open('BlockChain.json', 'w') as bc:
+            json.dump([genesis_block_data], bc, indent=4)
+
+        Block.update_latest_block('0', genesis_block)
+
     @staticmethod
-    def WriteOnChain(Data, Diff):
-        chain = []
-        with open ('BlockChain.json', 'r') as bc:
+    def write_on_chain(data, difficulty):
+        with open('BlockChain.json', 'r+') as bc:
             chain = json.load(bc)
-            i, prev = Block.getlatestBlock()
-            block = Block((i+1), Data)
-            block.mine(Data, prev, Diff)
-            if Chain.ProofofWork(Data, prev, Diff, block):
-                Block.updateLatestblock(prev, block)
-                indexb = i+1
-                blocki = 'Block' + str(indexb)
-                blockn = {
-                    blocki : {
-                        'Block Index' : indexb,
-                        'Block Data': Data,
-                        'Block Hash': block.Hash,
-                        'Block Nounce': block.Nounce,
-                        'Previous Hash':block.Previous_Hash,
-                    },
-                }
-                chain.append(blockn)
-                bc.close()
-                with open ('BlockChain.json', 'w') as bc:  
-                    json.dump(chain, bc, indent = 4)
-                return True
-            else:
-                return False
+            latest_index, previous_hash = Block.get_latest_block()
             
-    @staticmethod
-    def ProofofWork(Data, prvH, Diff, block):
-        #Retrive the nounce
-        Nounce = str(block.getData()[3]) 
+            new_block = Block(latest_index + 1, data)
+            new_block.mine(data, previous_hash, difficulty)
 
-        unminedblock = (str(Data) + str(prvH) + str(Nounce)).encode('utf-8')
+            if Chain.proof_of_work(data, previous_hash, difficulty, new_block):
+                Block.update_latest_block(previous_hash, new_block)
+                block_data = {
+                    'Block index': new_block.index,
+                    'Block data': data,
+                    'Block hash': new_block.hash,
+                    'Block nonce': new_block.nonce,
+                    'Previous hash': previous_hash,
+                }
+                chain.append(block_data)
 
-        umbhash = hashlib.sha256()
-        umbhash.update(unminedblock)
+                bc.seek(0)
+                json.dump(chain, bc, indent=4)
+                bc.truncate()
 
-        hash_result = umbhash.hexdigest()
-        if int(hash_result, 16) < 2**(256 - Diff):
-            return True
-        else:
+                return True
             return False
+
+    @staticmethod
+    def proof_of_work(data, previous_hash, difficulty, block):
+        nonce = block.nonce
+        unmined_block = (str(data) + str(previous_hash) + str(nonce)).encode('utf-8')
+        hash_result = hashlib.sha256(unmined_block).hexdigest()
+
+        return int(hash_result, 16) < 2**(256 - difficulty)

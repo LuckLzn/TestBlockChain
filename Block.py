@@ -1,58 +1,50 @@
 import hashlib
 import json
+
 class Block:
-    def __init__(self, index, Data):
+    def __init__(self, index, data):
         self.index = index
-        self.Data = Data
-        self.Previous_Hash = None
-        self.Hash = None
-        self.Nounce = 0
-        pass
-    def getData(self):
-        return self.index, self.Data, self.Hash, self.Nounce
-    
-    def BlockMined(self, Hash, Previous_Hash, Nounce):
-        self.Hash = Hash
-        self.Previous_Hash = Previous_Hash
-        self.Nounce = Nounce
-    
-    def mine(self, Data, PrHash, Diff):
-        nounce = 0
-        umbhash = hashlib.sha256()
+        self.data = data
+        self.previous_hash = None
+        self.hash = None
+        self.nonce = 0
+
+    def get_data(self):
+        return self.index, self.data, self.hash, self.nonce
+
+    def block_mined(self, hash_value, previous_hash, nonce):
+        self.hash = hash_value
+        self.previous_hash = previous_hash
+        self.nonce = nonce
+
+    def mine(self, data, previous_hash, difficulty):
+        nonce = 0
 
         while True:
-            unminedblock = (str(Data) + str(PrHash) + str(nounce)).encode('utf-8')
-            umbhash.update(unminedblock)
-            hash_result = umbhash.hexdigest()
-            if int(hash_result, 16) < 2**(256 - Diff):
+            unmined_block = (str(data) + str(previous_hash) + str(nonce)).encode('utf-8')
+            hash_result = hashlib.sha256(unmined_block).hexdigest()
+            if int(hash_result, 16) < 2**(256 - difficulty):
+                self.block_mined(hash_result, previous_hash, nonce)
                 break
-            umbhash = hashlib.sha256()  # Create a new hash object for the next iteration
-            unminedblock = (str(Data) + str(PrHash) + str(nounce)).encode()
-            nounce += 1
+            nonce += 1
 
-        
-        self.BlockMined(hash_result, PrHash, nounce)
-    
     @staticmethod
-    def updateLatestblock(prhash, block):
-        index, data, bhash, bnounce = Block.getData(block)
-        dictionary ={
-            'Block index' : index,
-            'Block Data' : data,
-            'Block Hash' : bhash,
-            'Block Nounce' : bnounce,
-            'Previous Hash' : prhash,
+    def update_latest_block(previous_hash, block):
+        index, data, block_hash, block_nonce = block.get_data()
+        block_info = {
+            'Block index': index,
+            'Block data': data,
+            'Block hash': block_hash,
+            'Block nonce': block_nonce,
+            'Previous hash': previous_hash,
         }
-        json_object = json.dumps(dictionary, indent = 4)
-    
-        # Writing to sample.json
         with open("LatestBlock.json", "w") as outfile:
-            outfile.write(json_object)
-   
+            json.dump(block_info, outfile, indent=4)
+
     @staticmethod
-    def getlatestBlock():
-        with open("LatestBlock.json", "r") as outfile:
-            data = json.load(outfile)
+    def get_latest_block():
+        with open("LatestBlock.json", "r") as infile:
+            data = json.load(infile)
             index = data["Block index"]
-            prhash = data["Block Hash"]
-            return int(index), prhash
+            previous_hash = data["Block hash"]
+            return int(index), previous_hash
